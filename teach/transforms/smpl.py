@@ -166,9 +166,9 @@ def get_body_model(model_type, gender, batch_size, device='cpu', ext='pkl'):
     else:
         gender = gender.upper()
         ext = 'npz'
-    body_model_path = f'data/smpl_models/{model_type}/{mtype}_{gender}.{ext}'
+    body_model_path = f'/localdisk2/szhang83/Data/AMASS/data/{model_type}_models/{model_type}/{mtype}_{gender}.{ext}'
 
-    body_model = smplx.create(body_model_path, model_type=type,
+    body_model = smplx.create(body_model_path, model_type=mtype,
                               gender=gender, ext=ext,
                               use_pca=False,
                               num_pca_comps=12,

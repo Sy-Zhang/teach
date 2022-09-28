@@ -52,7 +52,6 @@ AMASS_DIRS = [
     'TCDhandMocap/TCD_handMocap', # 3'
     'TotalCapture/TotalCapture', # 20'
     'Transitionsmocap/Transitions_mocap', # 20'
-    'TCDhandMocap/TCD_handMocap',
     'DanceDB/DanceDB',
     'BMLhandball/BMLhandball']
 
@@ -97,7 +96,7 @@ def param_dict_for_body_model(pose_vector, trans, betas=None):
 
 
 def process_sequence(filename, use_betas,
-                     gender):
+                     gender, model_type):
     
     f_id = '/'.join(filename.split('/')[-4:])
     # logger.info(f'Processing sequence: {f_id}..')
@@ -153,18 +152,15 @@ def process_sequence(filename, use_betas,
     final_seq_data['trans'] = amass_sequence_data['trans']
     final_seq_data['fps'] = OUT_FPS
     final_seq_data['fname'] = f_id
-    if gender != 'amass':
-        body_model_type = f'{body_model_type}_{gender}'
+
     if use_betas:
         final_seq_data['betas'] = amass_sequence_data['betas']
         body_params = param_dict_for_body_model(final_seq_data['poses'], 
                                                 final_seq_data['trans'],
-                                                betas=final_seq_data['betas'],
-                                                model_type=body_model_type)
+                                                betas=final_seq_data['betas'])
     else:
         body_params = param_dict_for_body_model(final_seq_data['poses'],
-                                                final_seq_data['trans'],
-                                                model_type=body_model_type)
+                                                final_seq_data['trans'])
     # must do SMPL forward pass to get joints
     # workaround to avoid running out of GPU
     body_joint_chunk = []
@@ -175,7 +171,7 @@ def process_sequence(filename, use_betas,
         body_params_temp = {}
         for k, v in body_params.items():
             body_params_temp[k] = v[sidx:eidx]
-        bodymodel_seq = get_body_model(gender_of_seq if gender=='amass' else gender,
+        bodymodel_seq = get_body_model(model_type, gender_of_seq if gender=='amass' else gender,
                                        eidx-sidx, device='cuda')
 
         smplx_output = bodymodel_seq(return_verts=True, **body_params_temp)
@@ -220,7 +216,7 @@ def read_data(input_dir, model_type, output_dir, use_betas, gender):
             if os.path.basename(seq) == 'neutral_stagei.npz' or \
                 os.path.basename(seq) == 'shape.npz':
                 continue
-            final_seq_data = process_sequence(seq, use_betas, gender)
+            final_seq_data = process_sequence(seq, use_betas, gender, model_type)
             if final_seq_data:
                 dataset_db_list.append(final_seq_data)
         os.makedirs(out_dir, exist_ok=True)
@@ -242,12 +238,9 @@ if __name__ == '__main__':
                         help='input path of AMASS data in unzipped format without anything else.')
     parser.add_argument('--output-path', required=True, type=str, 
                         help='output path of AMASS data in unzipped format without anything else.')
-    parser.add_argument('--use-betas', default=False, action='store_true',
-                        help='creates submission files for cluster')
-    parser.add_argument('--gender', required=True, choices=['male', 'female', 
-                                                          'neutral', 'amass'],
-                        type=str, help='hard-code the gender or use amass gender')
-
+    parser.add_argument('--model-type', required=True, choices=['smplh'], type=str, help='')
+    parser.add_argument('--use-betas', default=False, action='store_true', help='creates submission files for cluster')
+    parser.add_argument('--gender', required=True, choices=['male', 'female', 'neutral', 'amass'], type=str, help='hard-code the gender or use amass gender')
 
     args = parser.parse_args()
     input_dir = args.input_path

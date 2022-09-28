@@ -23,10 +23,10 @@ sys.path.append('.')
 from loguru import logger
 from tqdm import tqdm
 import os
-amass_path = 'path/toprocessed-amass-data/processed_amass_smplh_male_30fps/amass.pth.tar'
+amass_path = '/localdisk2/szhang83/Data/AMASS/data/amass/amass.pth.tar'
 amass_data = joblib.load(amass_path)    
 logger.info(f'Loading the dataset from {amass_path}')
-babel_path = 'path/to/babel/data/id2fname/amass-path2babel.json'
+babel_path = '/localdisk2/szhang83/Data/AMASS/babel-teach/id2fname/amass-path2babel.json'
 from teach.utils.file_io import read_json
 amass2babel = read_json(babel_path)
 dataset_db_lists = {'train': [],
@@ -38,6 +38,9 @@ for sample in tqdm(amass_data):
         continue
 
     split_of_seq = amass2babel[sample['fname']]['split']
+    # if split_of_seq not in dataset_db_lists:
+        # num_bad += 1
+        # continue
     babel_key = amass2babel[sample['fname']]['babel_id']
     # construct babel key fro  amass keys and utils
     sample_babel = {}
@@ -47,7 +50,7 @@ for sample in tqdm(amass_data):
     dataset_db_lists[split_of_seq].append(sample_babel)
 
 print(f'Percentage not found: {num_bad}/{len(amass_data)}')
-out_path = 'output-path/babel-smplh-30fps-male'
+out_path = '/localdisk2/szhang83/Data/AMASS/data/babel/babel-smplh-30fps-male'
 os.makedirs(out_path, exist_ok=True)
 for k, v in dataset_db_lists.items():
     joblib.dump(v, f'{out_path}/{k}.pth.tar')
